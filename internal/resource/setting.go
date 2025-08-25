@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/soft-techies-com/directus-terraform/internal/client"
+	"github.com/soft-techies-com/terraform-provider-directus/internal/client"
 )
 
 // SettingResource implements the directus_setting resource

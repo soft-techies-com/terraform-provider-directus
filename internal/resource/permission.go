@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/soft-techies-com/directus-terraform/internal/client"
+	"github.com/soft-techies-com/terraform-provider-directus/internal/client"
 )
 
 var _ resource.ResourceWithImportState = &PermissionResource{}
@@ -209,125 +209,123 @@ func (r *PermissionResource) Read(ctx context.Context, req resource.ReadRequest,
 }
 
 func (r *PermissionResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-    var plan PermissionModel
-    var state PermissionModel
+	var plan PermissionModel
+	var state PermissionModel
 
-    resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-    resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-    if resp.Diagnostics.HasError() {
-        return
-    }
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
-    // Preserve ID from current state
-    plan.ID = state.ID
+	// Preserve ID from current state
+	plan.ID = state.ID
 
-    payload := map[string]any{
-        "collection": plan.Collection.ValueString(),
-        "action":     plan.Action.ValueString(),
-        "policy":     plan.Policy.ValueString(),
-    }
+	payload := map[string]any{
+		"collection": plan.Collection.ValueString(),
+		"action":     plan.Action.ValueString(),
+		"policy":     plan.Policy.ValueString(),
+	}
 
-    if s := plan.Permissions.ValueString(); s != "" {
-        payload["permissions"] = jsonRaw(s)
-    } else {
-        payload["permissions"] = nil
-    }
-    if s := plan.Validation.ValueString(); s != "" {
-        payload["validation"] = jsonRaw(s)
-    } else {
-        payload["validation"] = nil
-    }
-    if s := plan.Presets.ValueString(); s != "" {
-        payload["presets"] = jsonRaw(s)
-    } else {
-        payload["presets"] = nil
-    }
-    if !plan.Fields.IsNull() {
-        var fields []string
-        plan.Fields.ElementsAs(ctx, &fields, false)
-        payload["fields"] = fields
-    } else {
-        payload["fields"] = nil
-    }
+	if s := plan.Permissions.ValueString(); s != "" {
+		payload["permissions"] = jsonRaw(s)
+	} else {
+		payload["permissions"] = nil
+	}
+	if s := plan.Validation.ValueString(); s != "" {
+		payload["validation"] = jsonRaw(s)
+	} else {
+		payload["validation"] = nil
+	}
+	if s := plan.Presets.ValueString(); s != "" {
+		payload["presets"] = jsonRaw(s)
+	} else {
+		payload["presets"] = nil
+	}
+	if !plan.Fields.IsNull() {
+		var fields []string
+		plan.Fields.ElementsAs(ctx, &fields, false)
+		payload["fields"] = fields
+	} else {
+		payload["fields"] = nil
+	}
 
-    // Send PATCH
-    httpResp, err := r.client.Request(
-        ctx,
-        http.MethodPatch,
-        "/permissions/"+strconv.FormatInt(plan.ID.ValueInt64(), 10),
-        payload,
-    )
-    if err != nil {
-        resp.Diagnostics.AddError("api error", err.Error())
-        return
-    }
-    if err := parseResp(httpResp, nil); err != nil {
-        resp.Diagnostics.AddError("api error", err.Error())
-        return
-    }
+	// Send PATCH
+	httpResp, err := r.client.Request(
+		ctx,
+		http.MethodPatch,
+		"/permissions/"+strconv.FormatInt(plan.ID.ValueInt64(), 10),
+		payload,
+	)
+	if err != nil {
+		resp.Diagnostics.AddError("api error", err.Error())
+		return
+	}
+	if err := parseResp(httpResp, nil); err != nil {
+		resp.Diagnostics.AddError("api error", err.Error())
+		return
+	}
 
-    // ✅ Re-read resource from API to refresh id/system/etc
-    readResp, err := r.client.Request(
-        ctx,
-        http.MethodGet,
-        "/permissions/"+strconv.FormatInt(plan.ID.ValueInt64(), 10),
-        nil,
-    )
-    if err != nil {
-        resp.Diagnostics.AddError("api error", err.Error())
-        return
-    }
+	// ✅ Re-read resource from API to refresh id/system/etc
+	readResp, err := r.client.Request(
+		ctx,
+		http.MethodGet,
+		"/permissions/"+strconv.FormatInt(plan.ID.ValueInt64(), 10),
+		nil,
+	)
+	if err != nil {
+		resp.Diagnostics.AddError("api error", err.Error())
+		return
+	}
 
-    apiResp := struct {
-        Data map[string]any `json:"data"`
-    }{}
-    if err := parseResp(readResp, &apiResp); err != nil {
-        resp.Diagnostics.AddError("api error", err.Error())
-        return
-    }
+	apiResp := struct {
+		Data map[string]any `json:"data"`
+	}{}
+	if err := parseResp(readResp, &apiResp); err != nil {
+		resp.Diagnostics.AddError("api error", err.Error())
+		return
+	}
 
-    // reuse same parsing logic from Read()
-    var newState PermissionModel
-    newState.ID = plan.ID
-    newState.Collection = types.StringValue(str(apiResp.Data["collection"]))
-    newState.Action = types.StringValue(str(apiResp.Data["action"]))
+	// reuse same parsing logic from Read()
+	var newState PermissionModel
+	newState.ID = plan.ID
+	newState.Collection = types.StringValue(str(apiResp.Data["collection"]))
+	newState.Action = types.StringValue(str(apiResp.Data["action"]))
 
-    if v, ok := apiResp.Data["fields"].([]any); ok {
-        elems := make([]attr.Value, 0, len(v))
-        for _, f := range v {
-            elems = append(elems, types.StringValue(str(f)))
-        }
-        newState.Fields, _ = types.ListValue(types.StringType, elems)
-    }
+	if v, ok := apiResp.Data["fields"].([]any); ok {
+		elems := make([]attr.Value, 0, len(v))
+		for _, f := range v {
+			elems = append(elems, types.StringValue(str(f)))
+		}
+		newState.Fields, _ = types.ListValue(types.StringType, elems)
+	}
 
-    if v, ok := apiResp.Data["permissions"]; ok && v != nil {
-        b, _ := json.Marshal(v)
-        newState.Permissions = types.StringValue(string(b))
-    }
-    if v, ok := apiResp.Data["validation"]; ok && v != nil {
-        b, _ := json.Marshal(v)
-        newState.Validation = types.StringValue(string(b))
-    }
-    if v, ok := apiResp.Data["presets"]; ok && v != nil {
-        b, _ := json.Marshal(v)
-        newState.Presets = types.StringValue(string(b))
-    }
+	if v, ok := apiResp.Data["permissions"]; ok && v != nil {
+		b, _ := json.Marshal(v)
+		newState.Permissions = types.StringValue(string(b))
+	}
+	if v, ok := apiResp.Data["validation"]; ok && v != nil {
+		b, _ := json.Marshal(v)
+		newState.Validation = types.StringValue(string(b))
+	}
+	if v, ok := apiResp.Data["presets"]; ok && v != nil {
+		b, _ := json.Marshal(v)
+		newState.Presets = types.StringValue(string(b))
+	}
 
-    if v, ok := apiResp.Data["policy"].(string); ok {
-        newState.Policy = types.StringValue(v)
-    } else {
-        newState.Policy = types.StringValue("")
-    }
-    if v, ok := apiResp.Data["system"].(bool); ok {
-        newState.System = types.BoolValue(v)
-    } else {
-        newState.System = types.BoolValue(false)
-    }
+	if v, ok := apiResp.Data["policy"].(string); ok {
+		newState.Policy = types.StringValue(v)
+	} else {
+		newState.Policy = types.StringValue("")
+	}
+	if v, ok := apiResp.Data["system"].(bool); ok {
+		newState.System = types.BoolValue(v)
+	} else {
+		newState.System = types.BoolValue(false)
+	}
 
-    resp.Diagnostics.Append(resp.State.Set(ctx, &newState)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &newState)...)
 }
-
-
 
 // Delete deletes the permission
 func (r *PermissionResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {

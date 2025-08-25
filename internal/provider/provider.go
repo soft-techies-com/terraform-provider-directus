@@ -12,8 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/soft-techies-com/directus-terraform/internal/client"
-	resourcepkg "github.com/soft-techies-com/directus-terraform/internal/resource"
+	"github.com/soft-techies-com/terraform-provider-directus/internal/client"
+	resourcepkg "github.com/soft-techies-com/terraform-provider-directus/internal/resource"
 )
 
 // New returns a new instance of the provider.
