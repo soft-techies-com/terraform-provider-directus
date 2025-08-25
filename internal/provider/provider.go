@@ -33,7 +33,7 @@ type directusProviderModel struct {
 }
 
 func (p *directusProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
-	resp.TypeName = "directus-terraform"
+	resp.TypeName = "directus"
 }
 
 func (p *directusProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
